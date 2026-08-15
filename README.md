@@ -21,7 +21,7 @@ This cloned repository does not include any experimental data or plots of proces
 
 To properly use this repository, local downloads of the CFACT data are required.
 
-Raw data from the CFACT Campaign can be found [here](https://data.eol.ucar.edu/project/609/datasets?subprojectsIds=).
+Raw data from the CFACT Campaign can be found [here](https://data.eol.ucar.edu/project/609/datasets?subprojectsIds=). Once at this page, simply press "Place Order" to begin the data extraction process.
 
 Currently, this analysis code is only meant for use of high-frequency (20 Hz) and 5-minute data from the "NCAR/EOL ISS Surface Meteorology Products" Dataset available at the previous link. Future work may incorporate other dataset products as necessary. 
 
