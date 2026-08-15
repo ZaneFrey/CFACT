@@ -1,44 +1,76 @@
-# Cold Fog Amongst Complex Terrain (CFACT) Campaign Analysis
+# CFACT Python Analysis
 
-This repository hosts analysis code for the Cold Fog Amongst Complex Terrain (CFACT) Campaign (2021-2022). From NCAR EOL's website, "The Cold Fog Amongst Complex Terrain (CFACT) field campaign and science project sponsored by the National Science Foundation (NSF) investigated cold fog formation in mountain valleys. The overarching goals of the CFACT project were to
-1. investigate cold fog development and environment conditions in complex terrain with the latest observation technology,
-2. improve microphysical parameterizations and visibility algorithms used in numerical weather prediction (NWP) models, and
-3. develop data-assimilation and analysis methods for current and next-generation (e.g., sub-kilometer scale) NWP models."
+This repository contains the Python analysis workflow for the Cold Fog Amongst Complex Terrain (CFACT) campaign. It reads NCAR/EOL ISFS high-rate and five-minute surface meteorology and flux NetCDF products, computes turbulence and meteorological diagnostics, and produces publication-ready figures.
 
-This analysis code is a collaborative effort to build a robust framework to efficiently analyze and plot both raw and processed data from the CFACT campaign for research purposes. 
+The repository is intentionally Python-only. MATLAB sources, parity utilities, and the old standalone overview utility are not part of this codebase.
 
+## Setup
 
-## Downloading the Code
+Create or update the reproducible Conda environment:
 
-The repository can be cloned to your local filespace with:
+```powershell
+conda env create -f environment.yml
+conda activate cfact
+```
 
-```git clone https://github.com/ZaneFrey/CFACT.git```
+For an existing environment, use `conda env update -n cfact -f environment.yml --prune`.
 
-This cloned repository does not include any experimental data or plots of processed data.
+## Data
 
+Place NetCDF files directly in `data/`. Both supported filename forms are recognized:
 
-## Access CFACT Data
+- High rate: `isfs_cfact_hr_*_YYYYMMDD_HH.nc`
+- Five minute: `isfs_cfact_5min_*_YYYYMMDD.nc`
 
-To properly use this repository, local downloads of the CFACT data are required.
+Raw data and generated figures are ignored by Git. See [data/README.md](data/README.md) for acquisition and layout details.
 
-Raw data from the CFACT Campaign can be found [here](https://data.eol.ucar.edu/project/609/datasets?subprojectsIds=). Once at this page, simply press "Place Order" to begin the data extraction process.
+## Run an analysis
 
-Currently, this analysis code is only meant for use of high-frequency (20 Hz) and 5-minute data from the following datasets:
-- NCAR/EOL ISFS High Rate Surface Meteorology and Flux Products - winds in planar geographic and tilt corrected coordinates
-- NCAR/EOL ISFS 5-minute Surface Meteorology and Flux Products - winds in planar geographic and tilt corrected coordinates
+The ready-to-run case in `analysis/config.yaml` selects the DCS site from 10:00 through 12:00 local time on 2022-02-20 and uses centered, partial-edge, 300-second gliding calculations.
 
+```powershell
+conda run -n cfact python analysis/driver_metdata.py
+conda run -n cfact python analysis/driver_anisotropy.py --config analysis/config.yaml
+```
 
-## Using the Analysis Code
+Every working driver exposes `run(config_path=None, flag_overrides=None) -> list[PlotArtifact]` for programmatic use. Plot flags and plot-specific settings are constants near the top of each driver. `SAVE_FIGURES` controls persistence; saved files go to the configured output directory.
 
-TODO
+```python
+from analysis.driver_metdata import run
 
+artifacts = run(flag_overrides={
+    "plot_wind_speed": True,
+    "plot_wind_direction": False,
+    "plot_sonic_temperature": False,
+    "save_figures": True,
+})
+print(artifacts[0].name, artifacts[0].saved_path)
+```
 
-## Example Usage and Products
+Available drivers are organized by domain:
 
-TODO
+- `driver_metdata.py`: u/v/w, wind speed/direction, sonic/ambient temperature, RH, radiation flag
+- `driver_stats.py`: component variances and PDFs/histograms
+- `driver_correlations.py`: autocorrelation, integral timescale, quadrant scatter, joint PDF
+- `driver_spectral.py`: spectra, cospectra, combined panels
+- `driver_tke.py`: TKE, friction velocity, Reynolds fluxes, supported TKE transport
+- `driver_anisotropy.py`: x_B/y_B time series and explicit advanced-analysis flags
+- `driver_wavelet.py`: wavelet spectra and scalograms
+- `driver_mrd.py`, `driver_pod.py`: actionable unsupported placeholders
 
+MRD, POD, the full TKE budget, z/L, and triangle animation remain explicit placeholders. Enabling unsupported flags raises `NotImplementedError`; it never silently produces no output.
 
-## Artificial Intelligence Disclaimer
+## Validation
 
-Analysis scripts in this repository were partly generated and streamlined with the use of artificial intelligence (AI) models, namely ChatGPT-5.X models.
+```powershell
+conda run -n cfact pytest
+conda run -n cfact python -m compileall -q analysis tools tests
+git diff --check
+git status --short
+```
 
+Integration tests skip cleanly when raw data are absent. With the validation data installed, they assert the six DCS heights (1, 2, 3, 7, 17, and 32 m) and validate the five default PNG products.
+
+## AI disclaimer
+
+Parts of this analysis framework were generated and streamlined with OpenAI models and require the same scientific review as any other contributed code.

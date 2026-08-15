@@ -1,0 +1,13 @@
+name: cfact
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.11
+  - numpy
+  - pandas
+  - matplotlib
+  - scipy
+  - pywavelets
+  - netcdf4
+  - pyyaml
+  - pytest

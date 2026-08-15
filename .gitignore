@@ -1,10 +1,30 @@
-# Ignore netCDF files in data directory, presumably downloaded from NCAR EOL site.
-/data/*.nc
+# Raw observations and generated analysis products
+/data/**/*.nc
+/analysis/outputs/
 
-# Ignore Python cache files
+# Python and test artifacts
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+pytest-cache-files-*/
+/.test-tmp/
+.coverage
+coverage.xml
+htmlcov/
 
-# Ignore editor files
+# Local environments and packaging output
+.venv/
+venv/
+env/
+.conda/
+build/
+dist/
+*.egg-info/
+
+# Editors and operating systems
 .vscode/
+.idea/
 *.swp
+*.swo
+.DS_Store
+Thumbs.db
