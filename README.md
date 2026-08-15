@@ -23,7 +23,9 @@ To properly use this repository, local downloads of the CFACT data are required.
 
 Raw data from the CFACT Campaign can be found [here](https://data.eol.ucar.edu/project/609/datasets?subprojectsIds=). Once at this page, simply press "Place Order" to begin the data extraction process.
 
-Currently, this analysis code is only meant for use of high-frequency (20 Hz) and 5-minute data from the "NCAR/EOL ISS Surface Meteorology Products" Dataset available at the previous link. Future work may incorporate other dataset products as necessary. 
+Currently, this analysis code is only meant for use of high-frequency (20 Hz) and 5-minute data from the following datasets:
+- NCAR/EOL ISFS High Rate Surface Meteorology and Flux Products - winds in planar geographic and tilt corrected coordinates
+- NCAR/EOL ISFS 5-minute Surface Meteorology and Flux Products - winds in planar geographic and tilt corrected coordinates
 
 
 ## Using the Analysis Code
