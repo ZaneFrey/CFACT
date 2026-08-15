@@ -1,0 +1,10 @@
+# Ignore netCDF files in data directory, presumably downloaded from NCAR EOL site.
+/data/*.nc
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore editor files
+.vscode/
+*.swp
