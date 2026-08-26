@@ -22,21 +22,21 @@ from analysis.driver_common import (
     resolve_flags,
 )
 from analysis.models import PlotArtifact
-from analysis.statistics import compute_autocorrelation, compute_integral_timescale
+from analysis.statistics import compute_autocorrelation, compute_integral_timescale, compute_window_stat
 from tools.common import get_variable_time_axis
 from tools.plotting import plot_autocorrelation, plot_quadrant_joint_pdf, plot_quadrant_scatter
 from tools.series import collect_height_series
 from tools.style import apply_style
 
 PLOT_AUTOCORRELATION = False
-PLOT_INTEGRAL_TIMESCALE = False
+PLOT_INTEGRAL_TIMESCALE = True
 PLOT_QUADRANT_SCATTER = False
 PLOT_QUADRANT_JOINT_PDF = False
-SAVE_FIGURES = False
+SAVE_FIGURES = True
 
 AUTOCORRELATION_COMPONENTS = ("u", "v", "w", "tc")
 INTEGRAL_TIMESCALE_PAIR = ("u", "u")
-MAX_LAG_SECONDS = 1800
+MAX_LAG_SECONDS = 900
 
 
 def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] | None = None) -> list[PlotArtifact]:
@@ -53,15 +53,16 @@ def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] |
         return []
     config = load_driver_config(config_path)
     prefixes = list(AUTOCORRELATION_COMPONENTS if flags["plot_autocorrelation"] else ())
-    if flags["plot_integral_timescale"]:
-        prefixes.extend(INTEGRAL_TIMESCALE_PAIR)
     if flags["plot_quadrant_scatter"] or flags["plot_quadrant_joint_pdf"]:
         prefixes.extend(["u", "w"])
-    data = load_data(config, list(dict.fromkeys(prefixes)))
-    _, time_local, _, _ = get_variable_time_axis(data)
+    data = load_data(config, list(dict.fromkeys(prefixes))) if prefixes else None
+    time_local = None
+    if data is not None:
+        _, time_local, _, _ = get_variable_time_axis(data)
     apply_style(config.figure)
     artifacts: list[PlotArtifact] = []
     if flags["plot_autocorrelation"]:
+        assert data is not None and time_local is not None
         stats = []
         for prefix in AUTOCORRELATION_COMPONENTS:
             output = []
@@ -74,15 +75,30 @@ def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] |
         artifacts.append(artifact_from_figure(config, "autocorrelation", figure, flags["save_figures"]))
     if flags["plot_integral_timescale"]:
         prefix_x, prefix_y = INTEGRAL_TIMESCALE_PAIR
-        x_series = collect_height_series(data, config.site, prefix_x)
-        y_series = collect_height_series(data, config.site, prefix_y)
+        integral_data = load_data(
+            config,
+            list(dict.fromkeys(INTEGRAL_TIMESCALE_PAIR)),
+            time_padding_seconds=MAX_LAG_SECONDS / 2.0,
+        )
+        _, integral_time_local, _, _ = get_variable_time_axis(integral_data)
+        x_series = collect_height_series(integral_data, config.site, prefix_x)
+        y_series = collect_height_series(integral_data, config.site, prefix_y)
         x_series, y_series = align_height_series(x_series, y_series)
         output = []
         output_time = None
         for x_entry, y_entry in zip(x_series, y_series):
-            output_time, values = compute_integral_timescale(
+            raw_time, raw_values = compute_integral_timescale(
                 x_entry["data"], x_entry["meta"], y_entry["data"], y_entry["meta"],
-                time_local, config.averaging_period_seconds, config.centered_gliding,
+                integral_time_local, MAX_LAG_SECONDS,
+            )
+            requested = (raw_time >= config.start_time) & (raw_time <= config.end_time)
+            output_time, values = compute_window_stat(
+                raw_values[requested],
+                None,
+                raw_time[requested],
+                config.averaging_period_seconds,
+                config.centered_gliding,
+                "mean",
             )
             output.append({**x_entry, "data": values, "time": output_time})
         artifacts.append(
@@ -92,6 +108,7 @@ def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] |
             )
         )
     if flags["plot_quadrant_scatter"] or flags["plot_quadrant_joint_pdf"]:
+        assert data is not None and time_local is not None
         u_series = collect_height_series(data, config.site, "u")
         w_series = collect_height_series(data, config.site, "w")
         u_series, w_series = align_height_series(u_series, w_series)

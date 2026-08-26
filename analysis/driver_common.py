@@ -36,9 +36,10 @@ def resolve_flags(defaults: Mapping[str, bool], overrides: Mapping[str, bool] | 
     return flags
 
 
-def selected_files(config: AnalysisConfig, cadence: str) -> list[str]:
+def selected_files(config: AnalysisConfig, cadence: str, time_padding_seconds: float = 0.0) -> list[str]:
+    padding = pd.Timedelta(seconds=max(0.0, float(time_padding_seconds)))
     selected, _ = select_files_by_local_timerange(
-        config.data_dir, config.start_time, config.end_time, config.timezone
+        config.data_dir, config.start_time - padding, config.end_time + padding, config.timezone
     )
     token = "_hr_" if cadence == "20hz" else "_5min_"
     files = [name for name in selected if token in Path(name).name.lower()]
@@ -47,14 +48,22 @@ def selected_files(config: AnalysisConfig, cadence: str) -> list[str]:
     return files
 
 
-def load_data(config: AnalysisConfig, prefixes: list[str], cadence: str = "20hz") -> dict[str, Any]:
+def load_data(
+    config: AnalysisConfig,
+    prefixes: list[str],
+    cadence: str = "20hz",
+    time_padding_seconds: float = 0.0,
+) -> dict[str, Any]:
+    padding = pd.Timedelta(seconds=max(0.0, float(time_padding_seconds)))
+    start_time = config.start_time - padding
+    end_time = config.end_time + padding
     return read_fluxes(
-        selected_files(config, cadence),
+        selected_files(config, cadence, time_padding_seconds),
         site_codes=[config.site],
         var_prefixes=prefixes,
         local_timezone=config.timezone,
-        start_time_local=config.start_time,
-        end_time_local=config.end_time,
+        start_time_local=start_time,
+        end_time_local=end_time,
     )
 
 

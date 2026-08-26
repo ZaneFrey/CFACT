@@ -45,7 +45,7 @@ Plot flags can be changed by editing the uppercase constants near the top of a d
 
 When `save_figures` is `true`, each artifact is written to `output_dir` as `<artifact-name>.<figure.format>`. When it is `false`, the figure is still returned, but `saved_path` is `None`. If all supported plot flags are disabled, the driver returns an empty list without loading data.
 
-Time-series calculations use `averaging_period_seconds` and `centered_gliding` from the configuration. Plots use local time, sort heights numerically, assign the darkest blue to the lowest height, and place height legends outside the axes.
+Time-series calculations generally use `averaging_period_seconds` and `centered_gliding` from the configuration. The integral-timescale calculation is the exception described below: its scientific window is controlled by `MAX_LAG_SECONDS`, while the configuration controls only the plotted average. Plots use local time, sort heights numerically, assign the darkest blue to the lowest height, and place height legends outside the axes.
 
 ### `driver_metdata.py`
 
@@ -83,7 +83,7 @@ Produces autocorrelation, integral-timescale, and $u'$-$w'$ quadrant diagnostics
 | Override | Default | Plot and artifact output |
 |---|---:|---|
 | `plot_autocorrelation` | `false` | Autocorrelation panels for `u`, `v`, `w`, and sonic temperature, `autocorrelation.<format>` |
-| `plot_integral_timescale` | `true` | Windowed integral timescale for the configured component pair, `integral_timescale.<format>` |
+| `plot_integral_timescale` | `true` | Native-rate integral timescale for the configured component pair, averaged only for plotting, `integral_timescale.<format>` |
 | `plot_quadrant_scatter` | `false` | Scatter plot of $u'$ versus $w'$, with ejection, sweep, inward-interaction, and outward-interaction quadrants, `quadrant_scatter.<format>` |
 | `plot_quadrant_joint_pdf` | `false` | Joint-probability contours in the same quadrant coordinate system, `quadrant_joint_pdf.<format>` |
 | `save_figures` | `true` | Controls figure persistence |
@@ -91,8 +91,10 @@ Produces autocorrelation, integral-timescale, and $u'$-$w'$ quadrant diagnostics
 Additional source-level controls are:
 
 - `AUTOCORRELATION_COMPONENTS`, defaulting to `("u", "v", "w", "tc")`.
-- `MAX_LAG_SECONDS`, defaulting to 1800 seconds.
+- `MAX_LAG_SECONDS`, which sets both the maximum autocorrelation-plot lag and the centered calculation-window duration for the native-rate integral timescale.
 - `INTEGRAL_TIMESCALE_PAIR`, defaulting to `("u", "u")`, so the standard output is an autocorrelation-based timescale.
+- Integral timescales are calculated at every native-rate timestamp. `averaging_period_seconds` then controls only the displayed moving mean when `centered_gliding` is `true`, or nonoverlapping block means when it is `false`.
+- The integral-timescale load interval includes `MAX_LAG_SECONDS / 2` of padding on each side. Native-rate results are cropped back to the configured interval; unavailable calculation padding produces `NaN` edge values.
 - Quadrant fluctuations are computed by subtracting a moving mean whose width is `averaging_period_seconds`.
 
 ### `driver_spectral.py`

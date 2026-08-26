@@ -95,7 +95,7 @@ def expand_raw_series(values: Any, meta: dict[str, Any] | None, t_second: Any, r
     seconds_per_step = estimate_time_step_seconds(time_axis)
     sample_rate_hz = n_sample / seconds_per_step
     sample_offsets = (-0.5 * seconds_per_step) + (((np.arange(n_sample) + 0.5) / n_sample) * seconds_per_step)
-    base_seconds = time_axis.view("int64") / 1e9
+    base_seconds = time_axis.to_numpy(dtype="datetime64[ns]").astype(np.int64) / 1e9
     t_matrix = base_seconds[None, :] + sample_offsets[:, None]
     t_raw = pd.to_datetime(t_matrix.reshape(-1, order="F"), unit="s", utc=True).tz_convert(time_axis.tz)
     return raw, rep_idx.astype(int), sample_rate_hz, pd.DatetimeIndex(t_raw)
@@ -464,43 +464,42 @@ def compute_integral_timescale(
     y: Any,
     meta_y: dict[str, Any] | None,
     t_second: Any,
-    avg_period_seconds: float = 300.0,
-    glide: bool = True,
+    max_lag_seconds: float = 300.0,
 ) -> tuple[pd.DatetimeIndex, np.ndarray]:
-    if not glide:
-        raise ValueError("Integral timescale analysis requires glide=True.")
     x_raw, rep_idx_x, sample_rate_x, t_raw_x = expand_raw_series(x, meta_x, t_second, require_sample_dim=False)
     y_raw, rep_idx_y, sample_rate_y, t_raw_y = expand_raw_series(y, meta_y, t_second, require_sample_dim=False)
-    x_raw, y_raw, rep_idx, sample_rate_hz, _ = align_raw_series(
+    x_raw, y_raw, _, sample_rate_hz, t_raw = align_raw_series(
         x_raw, rep_idx_x, sample_rate_x, t_raw_x, y_raw, rep_idx_y, sample_rate_y, t_raw_y
     )
     x_raw = sanitize_series_array(x_raw, meta_x)
     y_raw = sanitize_series_array(y_raw, meta_y)
     x_raw = np.asarray(x_raw, dtype=float).reshape(-1)
     y_raw = np.asarray(y_raw, dtype=float).reshape(-1)
-    rep_idx = np.asarray(rep_idx, dtype=int).reshape(-1)
     if x_raw.size != y_raw.size:
         raise ValueError("Integral timescale raw inputs must align to the same number of samples.")
-    if x_raw.size == 0 or rep_idx.size == 0:
+    if x_raw.size == 0:
         return pd.DatetimeIndex([]), np.asarray([], dtype=float)
     dt = 1.0 / float(sample_rate_hz)
-    window_samples = max(3, int(round(float(avg_period_seconds) * sample_rate_hz)))
+    window_samples = max(3, int(round(float(max_lag_seconds) * sample_rate_hz)))
     if window_samples % 2 == 0:
         window_samples += 1
     max_lag_samples = min(window_samples - 1, x_raw.size - 1)
     if max_lag_samples < 1:
-        return pd.DatetimeIndex(t_second), np.full(rep_idx.size, np.nan)
+        return pd.DatetimeIndex(t_raw), np.full(x_raw.size, np.nan)
     half_window = window_samples // 2
-    out = np.full(rep_idx.size, np.nan)
+    out = np.full(x_raw.size, np.nan)
+    start_indices = np.arange(half_window, x_raw.size - half_window, dtype=int)
+    if start_indices.size == 0:
+        return pd.DatetimeIndex(t_raw), out
+    local_out = np.full(start_indices.size, np.nan)
     x_pad = np.pad(x_raw, (half_window, half_window), constant_values=np.nan)
     y_pad = np.pad(y_raw, (half_window, half_window), constant_values=np.nan)
-    start_indices = np.clip(rep_idx, 0, x_raw.size - 1)
     rho_prev = _correlation_vector_at_lag(x_pad, y_pad, start_indices, window_samples, 0)
     sign0 = np.sign(rho_prev)
     done = ~np.isfinite(rho_prev)
-    out[sign0 == 0] = 0.0
+    local_out[sign0 == 0] = 0.0
     done |= sign0 == 0
-    integral = np.zeros(rep_idx.size, dtype=float)
+    integral = np.zeros(start_indices.size, dtype=float)
     for lag_idx in range(1, max_lag_samples + 1):
         active = ~done
         if not np.any(active):
@@ -511,21 +510,22 @@ def compute_integral_timescale(
         invalid = active & ~np.isfinite(rho_curr)
         done[invalid] = True
         exact_zero = active & np.isfinite(rho_curr) & (rho_curr == 0)
-        out[exact_zero] = integral[exact_zero] + 0.5 * (rho_prev[exact_zero] + rho_curr[exact_zero]) * (tau_curr - tau_prev)
+        local_out[exact_zero] = integral[exact_zero] + 0.5 * (rho_prev[exact_zero] + rho_curr[exact_zero]) * (tau_curr - tau_prev)
         done[exact_zero] = True
         crossing = active & np.isfinite(rho_curr) & (np.sign(rho_curr) != sign0)
         crossing &= rho_curr != 0
         stable_crossing = crossing & (rho_curr != rho_prev)
-        tau_cross = np.full(rep_idx.size, np.nan)
+        tau_cross = np.full(start_indices.size, np.nan)
         tau_cross[stable_crossing] = tau_prev - rho_prev[stable_crossing] * (tau_curr - tau_prev) / (
             rho_curr[stable_crossing] - rho_prev[stable_crossing]
         )
-        out[stable_crossing] = integral[stable_crossing] + 0.5 * rho_prev[stable_crossing] * (tau_cross[stable_crossing] - tau_prev)
+        local_out[stable_crossing] = integral[stable_crossing] + 0.5 * rho_prev[stable_crossing] * (tau_cross[stable_crossing] - tau_prev)
         done[crossing] = True
         same_sign = active & ~done & np.isfinite(rho_curr) & (np.sign(rho_curr) == sign0)
         integral[same_sign] += 0.5 * (rho_prev[same_sign] + rho_curr[same_sign]) * (tau_curr - tau_prev)
         rho_prev[same_sign] = rho_curr[same_sign]
-    return pd.DatetimeIndex(t_second), out
+    out[start_indices] = local_out
+    return pd.DatetimeIndex(t_raw), out
 
 
 def _apply_log_binning(frequency_hz: Any, spectrum: Any, bins_per_decade: float, signed: bool = False) -> tuple[np.ndarray, np.ndarray]:
