@@ -7,6 +7,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from tools.common import build_height_colormap, collect_master_height_tags, format_height_label, height_tag_to_value
 
@@ -472,7 +473,7 @@ def plot_lumley_trajectory(xBSeries: list[dict[str, Any]], yBSeries: list[dict[s
     y_entry = list(yBSeries)[0]
     x = np.asarray(x_entry.get("data", []), dtype=float).reshape(-1)
     y = np.asarray(y_entry.get("data", []), dtype=float).reshape(-1)
-    time_local = np.asarray(timeAxis)
+    time_local = pd.DatetimeIndex(timeAxis)
     if not (x.size == y.size == time_local.size):
         raise ValueError("The Lumley trajectory plot requires x_B, y_B, and time to have the same length.")
     valid = np.isfinite(x) & np.isfinite(y)
@@ -488,21 +489,24 @@ def plot_lumley_trajectory(xBSeries: list[dict[str, Any]], yBSeries: list[dict[s
     triangle_x = [0, 1, 0.5, 0]
     triangle_y = [0, 0, math.sqrt(3) / 2, 0]
     ax.plot(triangle_x, triangle_y, "k-", lw=1.4)
-    scatter = ax.scatter(x, y, c=color_progress, cmap=plt.get_cmap("berlin"), s=28, edgecolors="none", alpha=0.85)
+    scatter = ax.scatter(x, y, c=color_progress, cmap=plt.get_cmap("seismic"), s=28, edgecolors="none", alpha=0.85)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, math.sqrt(3) / 2)
     ax.set_aspect("equal")
-    ax.grid(False)
     ax.set_xlabel("$x_B$")
     ax.set_ylabel("$y_B$")
-    colorbar = fig.colorbar(scatter, ax=ax, label="Time")
+    ax.tick_params(top=False, right=False)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    colorbar_axis = make_axes_locatable(ax).append_axes("right", size="5%", pad=0.1)
+    colorbar = fig.colorbar(scatter, cax=colorbar_axis, label="Local time")
     if time_local.size == 1:
         colorbar.set_ticks([0.0])
-        colorbar.set_ticklabels([mdates.num2date(mdates.date2num(time_local[0])).strftime("%H:%M")])
+        colorbar.set_ticklabels([time_local[0].strftime("%H:%M")])
     else:
         tick_positions = np.linspace(0.0, 1.0, min(3, time_local.size))
         tick_indices = np.linspace(0, time_local.size - 1, tick_positions.size, dtype=int)
-        tick_labels = [mdates.num2date(mdates.date2num(time_local[idx])).strftime("%H:%M") for idx in tick_indices]
+        tick_labels = [time_local[idx].strftime("%H:%M") for idx in tick_indices]
         colorbar.set_ticks(tick_positions)
         colorbar.set_ticklabels(tick_labels)
     fig.tight_layout()
