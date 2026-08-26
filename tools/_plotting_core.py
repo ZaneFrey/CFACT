@@ -41,6 +41,18 @@ def _variable_units(name: str) -> str:
     return lookup.get(str(name).lower(), "")
 
 
+def _autocorrelation_label(name: str) -> str:
+    variable = str(name).strip()
+    symbol = {
+        "u": "u",
+        "v": "v",
+        "w": "w",
+        "t": "T",
+        "tc": r"T_c",
+    }.get(variable.lower(), variable.replace("_", r"\_"))
+    return rf"$R_{{{symbol}{symbol}}}(L)$"
+
+
 def _format_variable_label(name: str, is_variance: bool) -> str:
     base = {
         "u": "u",
@@ -243,10 +255,12 @@ def plot_autocorrelation(stats: list[dict[str, Any]], figTitle: str | None = Non
         ax.set_ylim(-0.2, 1.0)
         ax.set_title(_variable_title(stat.get("displayName", stat.get("varName", ""))))
         ax.set_xlabel("Lag [min]" if lag_seconds.size and lag_seconds[-1] >= 120 else "Lag [s]")
-        ax.set_ylabel("R_AA(L)")
-    handles = [axes[0, 0].plot([], [], lw=1.5, color=_lookup_height_color(tag, master_tags, cmap), label=format_height_label(tag))[0] for tag in master_tags]
-    axes[0, 0].legend(handles=handles, loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, title="Height")
+        ax.set_ylabel(_autocorrelation_label(stat.get("varName", stat.get("displayName", ""))))
+    legend_ax = axes[0, -1]
+    handles = [legend_ax.plot([], [], lw=1.5, color=_lookup_height_color(tag, master_tags, cmap), label=format_height_label(tag))[0] for tag in master_tags]
+    legend_ax.legend(handles=handles, loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, title="Height")
     fig.tight_layout()
+    fig.subplots_adjust(wspace=0.28)
     return fig
 
 
