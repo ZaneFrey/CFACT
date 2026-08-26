@@ -6,6 +6,7 @@ from typing import Any
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from tools.common import build_height_colormap, collect_master_height_tags, format_height_label, height_tag_to_value
 
@@ -392,20 +393,37 @@ def plot_wavelet_scalogram(stats: dict[str, Any], figTitle: str | None = None):
     fig, axes = plt.subplots(len(series), 1, figsize=(12.4, max(2.8, 2.15 * len(series))), squeeze=False)
     if figTitle:
         fig.suptitle(figTitle, fontweight="bold")
+    magnitudes = [np.asarray(entry.get("scalogramMagnitude", []), dtype=float) for entry in series]
+    finite_magnitudes = [magnitude[np.isfinite(magnitude)] for magnitude in magnitudes]
+    finite_magnitudes = [magnitude for magnitude in finite_magnitudes if magnitude.size]
+    if not finite_magnitudes:
+        raise ValueError("Wavelet scalogram magnitudes contain no finite values.")
+    magnitude_min = min(float(np.min(magnitude)) for magnitude in finite_magnitudes)
+    magnitude_max = max(float(np.max(magnitude)) for magnitude in finite_magnitudes)
+    if magnitude_min == magnitude_max:
+        magnitude_max = float(np.nextafter(magnitude_max, np.inf))
     for ax, entry in zip(axes[:, 0], series):
         frequency_hz = np.asarray(entry.get("frequencyHz", []), dtype=float).reshape(-1)
         magnitude = np.asarray(entry.get("scalogramMagnitude", []), dtype=float)
-        time_local = np.asarray(entry.get("scalogramTime", []))
+        time_local = pd.DatetimeIndex(entry.get("scalogramTime", []))
         valid = np.isfinite(frequency_hz) & (frequency_hz > 0)
         frequency_hz = frequency_hz[valid]
         magnitude = magnitude[valid, :]
-        time_num = mdates.date2num(time_local)
-        mesh = ax.pcolormesh(time_num, frequency_hz, magnitude, shading="auto", cmap="turbo")
+        time_num = mdates.date2num(time_local.to_pydatetime())
+        mesh = ax.pcolormesh(
+            time_num,
+            frequency_hz,
+            magnitude,
+            shading="auto",
+            cmap="turbo",
+            vmin=magnitude_min,
+            vmax=magnitude_max,
+        )
         ax.set_yscale("log")
         ax.set_ylabel("f [Hz]")
         ax.set_title(format_height_label(str(entry.get("heightTag", "single"))), fontweight="normal")
         fig.colorbar(mesh, ax=ax, label="|WT|")
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M", tz=time_local.tz))
     axes[-1, 0].set_xlabel("Local Time")
     fig.tight_layout()
     return fig

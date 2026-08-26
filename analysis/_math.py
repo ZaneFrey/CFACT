@@ -610,7 +610,7 @@ def compute_cospectrum(x: Any, meta_x: dict[str, Any] | None, y: Any, meta_y: di
 
 def compute_wavelet_analysis(values: Any, meta: dict[str, Any] | None, t_second: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray, pd.DatetimeIndex]:
     raw, sample_rate_hz, t_native = expand_native_sample_stream_wavelet(values, meta, t_second)
-    raw = fill_missing_samples(raw)
+    raw = fill_missing_samples(sanitize_series_array(raw, meta))
     raw = raw - np.nanmean(raw)
     n = raw.size
     if n < 8:
