@@ -14,7 +14,7 @@ import pandas as pd
 
 from analysis.config import AnalysisConfig, load_config
 from analysis.models import PlotArtifact
-from analysis.statistics import compute_window_stat
+from analysis.statistics import compute_window_covariance, compute_window_stat
 from tools.common import build_height_colormap, format_height_label, get_variable_time_axis
 from tools.figures import save_figure
 from tools.netcdf import read_fluxes
@@ -100,6 +100,32 @@ def variance_height_series(data: dict[str, Any], config: AnalysisConfig, prefix:
         )
         output.append({**entry, "data": values, "time": time_stat})
         output_time = time_stat
+    return output_time, output
+
+
+def covariance_height_series(
+    data: dict[str, Any],
+    config: AnalysisConfig,
+    prefix_x: str,
+    prefix_y: str,
+) -> tuple[pd.DatetimeIndex, list[dict[str, Any]]]:
+    _, time_local, _, _ = get_variable_time_axis(data)
+    x_series = collect_height_series(data, config.site, prefix_x)
+    y_series = collect_height_series(data, config.site, prefix_y)
+    x_series, y_series = align_height_series(x_series, y_series)
+    output: list[dict[str, Any]] = []
+    output_time = pd.DatetimeIndex([])
+    for x_entry, y_entry in zip(x_series, y_series):
+        output_time, values = compute_window_covariance(
+            x_entry["data"],
+            x_entry["meta"],
+            y_entry["data"],
+            y_entry["meta"],
+            time_local,
+            config.averaging_period_seconds,
+            config.centered_gliding,
+        )
+        output.append({**x_entry, "data": values, "time": output_time})
     return output_time, output
 
 

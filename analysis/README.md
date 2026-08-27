@@ -45,11 +45,11 @@ Plot flags can be changed by editing the uppercase constants near the top of a d
 
 When `save_figures` is `true`, each artifact is written to `output_dir` as `<artifact-name>.<figure.format>`. When it is `false`, the figure is still returned, but `saved_path` is `None`. If all supported plot flags are disabled, the driver returns an empty list without loading data.
 
-Time-series calculations generally use `averaging_period_seconds` and `centered_gliding` from the configuration. The integral-timescale calculation is the exception described below: its scientific window is controlled by `MAX_LAG_SECONDS`, while the configuration controls only the plotted average. Plots use local time, sort heights numerically, assign the darkest blue to the lowest height, and place height legends outside the axes.
+Time-series calculations generally use `averaging_period_seconds` and `centered_gliding` from the configuration. The integral-timescale calculation is the exception described below: its scientific window is controlled by `MAX_LAG_SECONDS` in `driver_timescales.py`, while the configuration controls only the plotted average. Plots use local time, sort heights numerically, assign the darkest blue to the lowest height, and place height legends outside the axes.
 
 ### `driver_metdata.py`
 
-Produces window-mean meteorological time series. High-rate measurements are used except for radiation, which uses five-minute products.
+Produces window-mean meteorological time series from high-rate measurements.
 
 | Override | Default | Plot and artifact output |
 |---|---:|---|
@@ -61,41 +61,70 @@ Produces window-mean meteorological time series. High-rate measurements are used
 | `plot_sonic_temperature` | `true` | Mean sonic temperature, `sonic_temperature.<format>` |
 | `plot_ambient_temperature` | `false` | Mean ambient temperature, `ambient_temperature.<format>` |
 | `plot_relative_humidity` | `true` | Mean relative humidity with a 0–110% display range, `relative_humidity.<format>` |
-| `plot_radiation` | `false` | Four figures: `shortwave_incoming`, `shortwave_outgoing`, `longwave_incoming`, and `longwave_outgoing` |
 | `save_figures` | `true` | Controls whether the returned figures are written to disk |
 
-### `driver_stats.py`
+### `driver_radiation.py`
 
-Produces windowed velocity variances and raw-sample probability distributions.
+Produces window-mean radiation time series from five-minute products.
 
 | Override | Default | Plot and artifact output |
 |---|---:|---|
-| `plot_u_variance` | `true` | Windowed variance $\sigma_u^2$, `u_variance.<format>` |
-| `plot_v_variance` | `true` | Windowed variance $\sigma_v^2$, `v_variance.<format>` |
-| `plot_w_variance` | `true` | Windowed variance $\sigma_w^2$, `w_variance.<format>` |
-| `plot_pdfs` | `false` | One `pdfs.<format>` figure containing PDF and CDF panels for `u`, `v`, `w`, and sonic temperature. PDF panels also report skewness and kurtosis by height. |
+| `plot_radiation` | `false` | Four figures: `shortwave_incoming`, `shortwave_outgoing`, `longwave_incoming`, and `longwave_outgoing` |
 | `save_figures` | `true` | Controls figure persistence |
+
+### `driver_stats.py`
+
+Produces windowed velocity variances, raw-sample probability distributions, friction velocity, and the explicit z/L placeholder.
+
+| Override | Default | Plot and artifact output |
+|---|---:|---|
+| `plot_u_variance` | `false` | Windowed variance $\sigma_u^2$, `u_variance.<format>` |
+| `plot_v_variance` | `false` | Windowed variance $\sigma_v^2$, `v_variance.<format>` |
+| `plot_w_variance` | `false` | Windowed variance $\sigma_w^2$, `w_variance.<format>` |
+| `plot_pdfs` | `false` | One `pdfs.<format>` figure containing PDF and CDF panels for `u`, `v`, `w`, and sonic temperature. PDF panels also report skewness and kurtosis by height. |
+| `plot_friction_velocity` | `false` | $u_*=(\overline{u'w'}^2+\overline{v'w'}^2)^{1/4}$, `friction_velocity.<format>` |
+| `plot_z_over_l` | `false` | Unsupported placeholder; enabling it raises `NotImplementedError` |
+| `save_figures` | `false` | Controls figure persistence |
 
 ### `driver_correlations.py`
 
-Produces autocorrelation, integral-timescale, and $u'$-$w'$ quadrant diagnostics.
+Produces autocorrelation diagnostics.
 
 | Override | Default | Plot and artifact output |
 |---|---:|---|
 | `plot_autocorrelation` | `false` | Autocorrelation panels for `u`, `v`, `w`, and sonic temperature, `autocorrelation.<format>` |
-| `plot_integral_timescale` | `true` | Native-rate integral timescale for the configured component pair, averaged only for plotting, `integral_timescale.<format>` |
-| `plot_quadrant_scatter` | `false` | Scatter plot of $u'$ versus $w'$, with ejection, sweep, inward-interaction, and outward-interaction quadrants, `quadrant_scatter.<format>` |
-| `plot_quadrant_joint_pdf` | `false` | Joint-probability contours in the same quadrant coordinate system, `quadrant_joint_pdf.<format>` |
 | `save_figures` | `true` | Controls figure persistence |
 
 Additional source-level controls are:
 
 - `AUTOCORRELATION_COMPONENTS`, defaulting to `("u", "v", "w", "tc")`.
-- `MAX_LAG_SECONDS`, which sets both the maximum autocorrelation-plot lag and the centered calculation-window duration for the native-rate integral timescale.
+- `MAX_LAG_SECONDS`, which sets the maximum autocorrelation-plot lag.
+
+### `driver_timescales.py`
+
+Produces the native-rate integral timescale for the configured component pair, averaged only for plotting.
+
+| Override | Default | Plot and artifact output |
+|---|---:|---|
+| `plot_integral_timescale` | `true` | Integral timescale, `integral_timescale.<format>` |
+| `save_figures` | `true` | Controls figure persistence |
+
+Additional source-level controls and behavior are:
+
+- `MAX_LAG_SECONDS`, which sets the centered calculation-window duration for the native-rate integral timescale.
 - `INTEGRAL_TIMESCALE_PAIR`, defaulting to `("u", "u")`, so the standard output is an autocorrelation-based timescale.
 - Integral timescales are calculated at every native-rate timestamp. `averaging_period_seconds` then controls only the displayed moving mean when `centered_gliding` is `true`, or nonoverlapping block means when it is `false`.
 - The integral-timescale load interval includes `MAX_LAG_SECONDS / 2` of padding on each side. Native-rate results are cropped back to the configured interval; unavailable calculation padding produces `NaN` edge values.
-- Quadrant fluctuations are computed by subtracting a moving mean whose width is `averaging_period_seconds`.
+
+### `driver_quadrant.py`
+
+Produces $u'$-$w'$ quadrant diagnostics. Fluctuations are computed by subtracting a moving mean whose width is `averaging_period_seconds`.
+
+| Override | Default | Plot and artifact output |
+|---|---:|---|
+| `plot_quadrant_scatter` | `false` | Scatter plot of $u'$ versus $w'$, with ejection, sweep, inward-interaction, and outward-interaction quadrants, `quadrant_scatter.<format>` |
+| `plot_quadrant_joint_pdf` | `false` | Joint-probability contours in the same quadrant coordinate system, `quadrant_joint_pdf.<format>` |
+| `save_figures` | `true` | Controls figure persistence |
 
 ### `driver_spectral.py`
 
@@ -133,20 +162,24 @@ Computes Reynolds-stress anisotropy in barycentric coordinates using the configu
 
 ### `driver_tke.py`
 
-Produces turbulent kinetic energy, friction velocity, Reynolds fluxes, moisture flux, and vertical TKE transport.
+Produces turbulent kinetic energy and vertical TKE transport.
 
 | Override | Default | Plot and artifact output |
 |---|---:|---|
 | `plot_tke` | `false` | $0.5(\sigma_u^2+\sigma_v^2+\sigma_w^2)$, `tke.<format>` |
-| `plot_friction_velocity` | `false` | $u_*=(\overline{u'w'}^2+\overline{v'w'}^2)^{1/4}$, `friction_velocity.<format>` |
-| `plot_reynolds_fluxes` | `false` | Three figures: `reynolds_flux_u_w`, `reynolds_flux_v_w`, and `reynolds_flux_w_w` |
-| `plot_moisture_fluxes` | `false` | Specific-humidity flux derived from five-minute vapor, temperature, pressure, and vapor-flux products, `moisture_flux.<format>` |
 | `plot_tke_transport` | `false` | Vertical turbulent transport $\overline{w'e}$, `tke_transport.<format>` |
 | `plot_full_tke_budget` | `false` | Unsupported placeholder; enabling it raises `NotImplementedError` |
-| `plot_z_over_l` | `true` | Unsupported placeholder; enabling it raises `NotImplementedError` |
 | `save_figures` | `false` | Controls figure persistence |
 
-Because `plot_z_over_l` currently defaults to `true`, an unmodified call to this driver raises the placeholder error. Set `plot_z_over_l` to `false` and enable one or more implemented flags to produce figures.
+### `driver_fluxes.py`
+
+Produces Reynolds fluxes from high-rate measurements and moisture flux from five-minute products.
+
+| Override | Default | Plot and artifact output |
+|---|---:|---|
+| `plot_reynolds_fluxes` | `false` | Three figures: `reynolds_flux_u_w`, `reynolds_flux_v_w`, and `reynolds_flux_w_w` |
+| `plot_moisture_fluxes` | `false` | Specific-humidity flux derived from five-minute vapor, temperature, pressure, and vapor-flux products, `moisture_flux.<format>` |
+| `save_figures` | `false` | Controls figure persistence |
 
 ### `driver_wavelet.py`
 
@@ -170,7 +203,7 @@ Runs continuous wavelet analysis for one configured component at every available
 ### Known output limitations
 
 - `plot_spectral_panels` currently cannot complete because the plotting function requires four cospectrum groups while `COSPECTRUM_PAIRS` defines three.
-- The quadrant plots are labeled $u'/\sigma_u$ and $w'/\sigma_w$, but the driver currently supplies mean-removed fluctuations without dividing by their standard deviations.
+- The quadrant plots are labeled $u'/\sigma_u$ and $w'/\sigma_w$, but `driver_quadrant.py` currently supplies mean-removed fluctuations without dividing by their standard deviations.
 
 ## Default validation products
 

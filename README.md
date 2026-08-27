@@ -49,11 +49,15 @@ print(artifacts[0].name, artifacts[0].saved_path)
 
 Available drivers are organized by domain:
 
-- `driver_metdata.py`: u/v/w, wind speed/direction, sonic/ambient temperature, RH, radiation flag
-- `driver_stats.py`: component variances and PDFs/histograms
-- `driver_correlations.py`: autocorrelation, integral timescale, quadrant scatter, joint PDF
+- `driver_metdata.py`: u/v/w, wind speed/direction, sonic/ambient temperature, RH
+- `driver_radiation.py`: incoming/outgoing shortwave and longwave radiation
+- `driver_stats.py`: component variances, PDFs/histograms, friction velocity, and z/L placeholder
+- `driver_correlations.py`: autocorrelation
+- `driver_timescales.py`: integral timescale
+- `driver_quadrant.py`: quadrant scatter and joint PDF
+- `driver_fluxes.py`: Reynolds and moisture fluxes
 - `driver_spectral.py`: spectra, cospectra, combined panels
-- `driver_tke.py`: TKE, friction velocity, Reynolds fluxes, supported TKE transport
+- `driver_tke.py`: TKE, supported TKE transport, and full-budget placeholder
 - `driver_anisotropy.py`: x_B/y_B time series and explicit advanced-analysis flags
 - `driver_wavelet.py`: wavelet spectra and scalograms
 - `driver_mrd.py`, `driver_pod.py`: actionable unsupported placeholders

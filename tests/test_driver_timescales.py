@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 
-import analysis.driver_correlations as correlations
+import analysis.driver_timescales as timescales
 
 
 def test_integral_timescale_uses_max_lag_then_plot_only_averaging(monkeypatch):
@@ -30,28 +30,27 @@ def test_integral_timescale_uses_max_lag_then_plot_only_averaging(monkeypatch):
     artifact = object()
     calls = {}
 
-    monkeypatch.setattr(correlations, "MAX_LAG_SECONDS", 4.0)
-    monkeypatch.setattr(correlations, "load_driver_config", lambda path: config)
+    monkeypatch.setattr(timescales, "MAX_LAG_SECONDS", 4.0)
+    monkeypatch.setattr(timescales, "load_driver_config", lambda path: config)
 
     def fake_load_data(received_config, prefixes, cadence="20hz", time_padding_seconds=0.0):
         calls["padding"] = time_padding_seconds
         calls["prefixes"] = prefixes
         return {"loaded": True}
 
-    monkeypatch.setattr(correlations, "load_data", fake_load_data)
+    monkeypatch.setattr(timescales, "load_data", fake_load_data)
     monkeypatch.setattr(
-        correlations,
+        timescales,
         "get_variable_time_axis",
         lambda data: (padded_second_time.tz_convert("UTC"), padded_second_time, "time_datetime", "time_datetime_local"),
     )
-    monkeypatch.setattr(correlations, "collect_height_series", lambda *args, **kwargs: [entry])
-    monkeypatch.setattr(correlations, "apply_style", lambda *args, **kwargs: None)
+    monkeypatch.setattr(timescales, "collect_height_series", lambda *args, **kwargs: [entry])
 
     def fake_integral_timescale(x, meta_x, y, meta_y, t_second, max_lag_seconds):
         calls["max_lag"] = max_lag_seconds
         return raw_time, raw_values
 
-    monkeypatch.setattr(correlations, "compute_integral_timescale", fake_integral_timescale)
+    monkeypatch.setattr(timescales, "compute_integral_timescale", fake_integral_timescale)
 
     def fake_window_stat(values, meta, time, averaging_period_seconds, centered_gliding, stat_name):
         calls["smoothed_values"] = np.asarray(values)
@@ -61,15 +60,12 @@ def test_integral_timescale_uses_max_lag_then_plot_only_averaging(monkeypatch):
         calls["stat_name"] = stat_name
         return pd.DatetimeIndex(time), np.asarray(values)
 
-    monkeypatch.setattr(correlations, "compute_window_stat", fake_window_stat)
-    monkeypatch.setattr(correlations, "plot_height_series", lambda *args, **kwargs: artifact)
+    monkeypatch.setattr(timescales, "compute_window_stat", fake_window_stat)
+    monkeypatch.setattr(timescales, "plot_height_series", lambda *args, **kwargs: artifact)
 
-    result = correlations.run(
+    result = timescales.run(
         flag_overrides={
-            "plot_autocorrelation": False,
             "plot_integral_timescale": True,
-            "plot_quadrant_scatter": False,
-            "plot_quadrant_joint_pdf": False,
             "save_figures": False,
         }
     )

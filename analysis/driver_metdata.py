@@ -10,8 +10,6 @@ if __package__ in {None, ""}:
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-
 from analysis.driver_common import (
     align_height_series,
     driver_parser,
@@ -32,7 +30,6 @@ PLOT_WIND_DIRECTION = True
 PLOT_SONIC_TEMPERATURE = True
 PLOT_AMBIENT_TEMPERATURE = False
 PLOT_RELATIVE_HUMIDITY = False
-PLOT_RADIATION = False
 SAVE_FIGURES = True
 
 
@@ -46,7 +43,6 @@ def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] |
         "plot_sonic_temperature": PLOT_SONIC_TEMPERATURE,
         "plot_ambient_temperature": PLOT_AMBIENT_TEMPERATURE,
         "plot_relative_humidity": PLOT_RELATIVE_HUMIDITY,
-        "plot_radiation": PLOT_RADIATION,
         "save_figures": SAVE_FIGURES,
     }
     flags = resolve_flags(defaults, flag_overrides)
@@ -110,21 +106,6 @@ def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] |
                 save_figures=save,
             )
         )
-    if flags["plot_radiation"]:
-        radiation_data = load_data(config, ["Rsw_in", "Rsw_out", "Rlw_in", "Rlw_out"], cadence="5min")
-        for prefix, name, title in (
-            ("Rsw_in", "shortwave_incoming", "Incoming shortwave radiation"),
-            ("Rsw_out", "shortwave_outgoing", "Outgoing shortwave radiation"),
-            ("Rlw_in", "longwave_incoming", "Incoming longwave radiation"),
-            ("Rlw_out", "longwave_outgoing", "Outgoing longwave radiation"),
-        ):
-            time_axis, series = mean_height_series(radiation_data, config, prefix)
-            artifacts.append(
-                plot_height_series(
-                    config, name, f"{config.site.upper()}: {title}", r"Radiation [W m$^{-2}$]",
-                    time_axis, series, save_figures=save,
-                )
-            )
     return artifacts
 
 

@@ -18,8 +18,8 @@ from tools.series import collect_height_series
 from tools.style import apply_style
 
 PLOT_WAVELET_SPECTRA = False
-PLOT_SCALOGRAMS = False
-SAVE_FIGURES = False
+PLOT_SCALOGRAMS = True
+SAVE_FIGURES = True
 
 WAVELET_COMPONENT = "u"
 

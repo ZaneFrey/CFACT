@@ -27,14 +27,14 @@ from tools.common import get_variable_time_axis
 from tools.plotting import plot_energy_spectra, plot_lumley_trajectory, plot_lumley_triangle
 from tools.series import collect_height_series
 
-PLOT_X_B = True
-PLOT_Y_B = True
+PLOT_X_B = False
+PLOT_Y_B = False
 PLOT_ANISOTROPY_SPECTRA = False
 PLOT_LUMLEY_TRIANGLE = False
-PLOT_TRAJECTORIES = False
+PLOT_TRAJECTORIES = True
 PLOT_TRIANGLE_ANIMATION = False
 SAVE_FIGURES = True
-TRAJECTORY_HEIGHT_METERS = 2.0
+TRAJECTORY_HEIGHT_METERS = 17.0
 
 
 def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] | None = None) -> list[PlotArtifact]:
