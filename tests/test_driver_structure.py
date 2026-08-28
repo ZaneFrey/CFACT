@@ -21,6 +21,7 @@ def test_plot_controls_are_partitioned_by_driver():
     assert _plot_controls(radiation) == {"PLOT_RADIATION"}
     assert _plot_controls(fluxes) == {"PLOT_REYNOLDS_FLUXES", "PLOT_MOISTURE_FLUXES"}
     assert {"PLOT_FRICTION_VELOCITY", "PLOT_Z_OVER_L"} <= _plot_controls(stats)
+    assert "PLOT_P" in _plot_controls(metdata)
     assert "PLOT_RADIATION" not in _plot_controls(metdata)
     assert not {
         "PLOT_FRICTION_VELOCITY",

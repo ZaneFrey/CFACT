@@ -25,11 +25,12 @@ from analysis.models import PlotArtifact
 PLOT_U = False
 PLOT_V = False
 PLOT_W = False
-PLOT_WIND_SPEED = True
-PLOT_WIND_DIRECTION = True
-PLOT_SONIC_TEMPERATURE = True
+PLOT_WIND_SPEED = False
+PLOT_WIND_DIRECTION = False
+PLOT_SONIC_TEMPERATURE = False
 PLOT_AMBIENT_TEMPERATURE = False
 PLOT_RELATIVE_HUMIDITY = False
+PLOT_P = True
 SAVE_FIGURES = True
 
 
@@ -43,6 +44,7 @@ def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] |
         "plot_sonic_temperature": PLOT_SONIC_TEMPERATURE,
         "plot_ambient_temperature": PLOT_AMBIENT_TEMPERATURE,
         "plot_relative_humidity": PLOT_RELATIVE_HUMIDITY,
+        "plot_p": PLOT_P,
         "save_figures": SAVE_FIGURES,
     }
     flags = resolve_flags(defaults, flag_overrides)
@@ -60,10 +62,11 @@ def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] |
         "plot_sonic_temperature": ["tc"],
         "plot_ambient_temperature": ["T"],
         "plot_relative_humidity": ["RH"],
+        "plot_p": ["P"],
     }.items():
         if flags[flag]:
             prefixes.extend(needed)
-    data = load_data(config, list(dict.fromkeys(prefixes))) if prefixes else None
+    data = load_data(config, list(dict.fromkeys(prefixes)), cadence="20hz") if prefixes else None
     artifacts: list[PlotArtifact] = []
     save = flags["save_figures"]
     specifications = [
@@ -74,6 +77,7 @@ def run(config_path: str | Path | None = None, flag_overrides: dict[str, bool] |
         ("plot_sonic_temperature", "tc", "sonic_temperature", "Sonic temperature", r"Temperature [$^\circ$C]", None),
         ("plot_ambient_temperature", "T", "ambient_temperature", "Ambient temperature", r"Temperature [$^\circ$C]", None),
         ("plot_relative_humidity", "RH", "relative_humidity", "Relative humidity", "RH [%]", (0.0, 110.0)),
+        ("plot_p", "P", "p", "Mean pressure", "Pressure [mb]", None),
     ]
     for flag, prefix, name, title, ylabel, limits in specifications:
         if not flags[flag]:

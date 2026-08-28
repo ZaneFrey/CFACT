@@ -61,6 +61,7 @@ Produces window-mean meteorological time series from high-rate measurements.
 | `plot_sonic_temperature` | `true` | Mean sonic temperature, `sonic_temperature.<format>` |
 | `plot_ambient_temperature` | `false` | Mean ambient temperature, `ambient_temperature.<format>` |
 | `plot_relative_humidity` | `true` | Mean relative humidity with a 0–110% display range, `relative_humidity.<format>` |
+| `plot_p` | `false` | Mean dedicated barometric pressure from the preferred high-rate `P` channel, excluding IRGA pressure, `p.<format>` |
 | `save_figures` | `true` | Controls whether the returned figures are written to disk |
 
 ### `driver_radiation.py`

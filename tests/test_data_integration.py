@@ -52,3 +52,28 @@ def test_validation_case_generates_five_physical_six_height_products():
     _validate_artifact(artifacts["sonic_temperature"])
     _validate_artifact(artifacts["anisotropy_x_b"], (0, 1))
     _validate_artifact(artifacts["anisotropy_y_b"], (0, np.sqrt(3) / 2))
+
+
+def test_dcs_pressure_plot_uses_the_dedicated_high_rate_channel():
+    artifacts = run_metdata(
+        CONFIG,
+        flag_overrides={
+            "plot_u": False,
+            "plot_v": False,
+            "plot_w": False,
+            "plot_wind_speed": False,
+            "plot_wind_direction": False,
+            "plot_sonic_temperature": False,
+            "plot_ambient_temperature": False,
+            "plot_relative_humidity": False,
+            "plot_p": True,
+            "save_figures": False,
+        },
+    )
+
+    assert [artifact.name for artifact in artifacts] == ["p"]
+    assert artifacts[0].saved_path is None
+    lines = artifacts[0].figure.axes[0].lines
+    assert [line.get_label() for line in lines] == ["2 m"]
+    pressure = np.asarray(lines[0].get_ydata(), dtype=float)
+    assert np.isfinite(pressure).any()
