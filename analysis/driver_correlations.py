@@ -26,7 +26,7 @@ from tools.series import collect_height_series
 from tools.style import apply_style
 
 PLOT_AUTOCORRELATION = False
-SAVE_FIGURES = True
+SAVE_FIGURES = False
 
 AUTOCORRELATION_COMPONENTS = ("u", "v", "w", "tc")
 MAX_LAG_SECONDS = 900
