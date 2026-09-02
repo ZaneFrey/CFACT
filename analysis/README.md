@@ -163,13 +163,19 @@ Computes Reynolds-stress anisotropy in barycentric coordinates using the configu
 
 ### `driver_tke.py`
 
-Produces turbulent kinetic energy and vertical TKE transport.
+Calculates the simplified TKE budget at `PLOT_HEIGHT`, which defaults to 3 m and must be an intermediate common measurement height. Vertical derivatives use local three-point, second-order Lagrange polynomials. Dissipation is estimated from the longitudinal second-order structure parameter using $\alpha_k=0.55$, and the unavailable pressure-transport term is included in the closure residual.
 
 | Override | Default | Plot and artifact output |
 |---|---:|---|
-| `plot_tke` | `false` | $0.5(\sigma_u^2+\sigma_v^2+\sigma_w^2)$, `tke.<format>` |
-| `plot_tke_transport` | `false` | Vertical turbulent transport $\overline{w'e}$, `tke_transport.<format>` |
-| `plot_full_tke_budget` | `false` | Unsupported placeholder; enabling it raises `NotImplementedError` |
+| `plot_total_tke` | `false` | By-height $\bar e=0.5(\sigma_u^2+\sigma_v^2+\sigma_w^2)$, `total_tke.<format>` |
+| `plot_storage` | `false` | Term 1, $\partial\bar e/\partial t$, `tke_storage.<format>` |
+| `plot_tke_advec` | `false` | Term 2, mean vertical advection, `tke_advection.<format>` |
+| `plot_buoy_prod` | `false` | Term 3, buoyancy production, `buoyancy_production.<format>` |
+| `plot_shear_prod` | `false` | Term 4, shear production, `shear_production.<format>` |
+| `plot_tke_transport` | `false` | Term 5, vertical divergence of turbulent TKE transport, `tke_transport.<format>` |
+| `plot_dissipation` | `false` | Term 7 with its budget sign, $-\epsilon$, `tke_dissipation.<format>` |
+| `plot_residual` | `false` | Closure residual including pressure transport, `tke_residual.<format>` |
+| `plot_budget` | `false` | All calculated terms and the residual in a discretized viridis palette, `tke_budget.<format>` |
 | `save_figures` | `false` | Controls figure persistence |
 
 ### `driver_fluxes.py`
