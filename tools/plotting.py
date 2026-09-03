@@ -19,6 +19,10 @@ def plot_cospectra(stats: list[dict[str, Any]], fig_title: str | None = None):
     return _plotting_core.plot_cospectra(stats, fig_title)
 
 
+def plot_ogives(stats: list[dict[str, Any]], fig_title: str | None = None):
+    return _plotting_core.plot_ogives(stats, fig_title)
+
+
 def plot_autocorrelation(stats: list[dict[str, Any]], fig_title: str | None = None):
     return _plotting_core.plot_autocorrelation(stats, fig_title)
 

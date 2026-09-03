@@ -135,13 +135,15 @@ Produces Fourier energy spectra and cospectra from high-rate observations.
 |---|---:|---|
 | `plot_spectra` | `true` | Energy-spectrum panels for `u`, `v`, `w`, and sonic temperature, including a -5/3 reference slope, `spectra.<format>` |
 | `plot_cospectra` | `true` | Cospectrum panels for the configured component pairs. Each pair has normalized magnitude and signed $f\,Co(f)$ panels, `cospectra.<format>` |
+| `plot_ogive` | `true` | Ogive panels for the configured component pairs, plotted against time scale in seconds, `ogive.<format>` |
 | `plot_spectral_panels` | `false` | Intended to combine spectra and cospectra into one 3-by-4 figure, `spectral_panels.<format>` |
 | `save_figures` | `true` | Controls figure persistence |
 
 Additional source-level controls are:
 
 - `SPECTRUM_COMPONENTS`, defaulting to `("u", "v", "w", "tc")`.
-- `COSPECTRUM_PAIRS`, defaulting to `(("u", "v"), ("u", "w"), ("u", "tc"))`.
+- `COSPECTRUM_PAIRS`, defaulting to `(("u", "w"), ("w", "tc"))`.
+- `OGIVE_PAIRS`, defaulting to `(("u", "w"), ("w", "tc"))`.
 - `APPLY_LOG_BINNING`, defaulting to `true`.
 - `LOG_BINS_PER_DECADE`, defaulting to 50.
 

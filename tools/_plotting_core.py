@@ -232,6 +232,43 @@ def plot_cospectra(stats: list[dict[str, Any]], figTitle: str | None = None):
     return fig
 
 
+def plot_ogives(stats: list[dict[str, Any]], figTitle: str | None = None):
+    if not stats:
+        raise ValueError("The stats input cannot be empty.")
+    master_tags = collect_master_height_tags(stats)
+    cmap = build_height_colormap(len(master_tags))
+    fig, axes = plt.subplots(1, len(stats), figsize=(4.0 * len(stats), 3.8), squeeze=False)
+    if figTitle:
+        fig.suptitle(figTitle, fontweight="bold")
+    for ax, stat in zip(axes[0], stats):
+        ax.grid(True)
+        any_ogive = False
+        period_values = []
+        for series in stat.get("series", []):
+            period = np.asarray(series.get("timeScaleSeconds", []), dtype=float).reshape(-1)
+            ogive = np.asarray(series.get("data", []), dtype=float).reshape(-1)
+            valid = np.isfinite(period) & np.isfinite(ogive) & (period > 0)
+            if not np.any(valid):
+                continue
+            tag = str(series.get("heightTag", "single"))
+            ax.semilogx(period[valid], ogive[valid], lw=1.4, color=_lookup_height_color(tag, master_tags, cmap))
+            period_values.append(period[valid])
+            any_ogive = True
+        if not any_ogive:
+            ax.text(0.5, 0.5, "No finite ogive data to plot", transform=ax.transAxes, ha="center", va="center", color="0.4")
+        ax.axhline(0.0, color="k", lw=0.8)
+        ax.set_title(stat.get("displayName", stat.get("varName", "")))
+        ax.set_xlabel("Time scale [s]")
+        ax.set_ylabel("Ogive\n$\\int_f^{f_N} Co(f')\\,df'$")
+        if period_values:
+            periods = np.concatenate(period_values)
+            ax.set_xlim(np.nanmin(periods), np.nanmax(periods))
+    handles = [axes[0, 0].plot([], [], lw=1.5, color=_lookup_height_color(tag, master_tags, cmap), label=format_height_label(tag))[0] for tag in master_tags]
+    axes[0, 0].legend(handles=handles, loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, title="Height")
+    fig.tight_layout()
+    return fig
+
+
 def plot_autocorrelation(stats: list[dict[str, Any]], figTitle: str | None = None):
     if not stats:
         raise ValueError("The stats input cannot be empty.")

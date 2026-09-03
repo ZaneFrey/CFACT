@@ -6,6 +6,7 @@ import pandas as pd
 from analysis.anisotropy import barycentric_coordinates
 from analysis.driver_common import wind_direction
 from analysis.statistics import compute_integral_timescale, compute_window_stat
+from analysis.spectra import compute_ogive
 
 
 def test_centered_gliding_mean_retains_partial_edges():
@@ -56,3 +57,9 @@ def test_barycentric_coordinates_stay_in_physical_bounds():
     assert finite.any()
     assert np.all((x_b[finite] >= 0) & (x_b[finite] <= 1))
     assert np.all((y_b[finite] >= 0) & (y_b[finite] <= np.sqrt(3) / 2))
+
+
+def test_ogive_integrates_cospectrum_from_high_to_low_frequency():
+    ogive = compute_ogive([1.0, 2.0, 4.0], [2.0, 2.0, 2.0])
+
+    np.testing.assert_allclose(ogive, [6.0, 4.0, 0.0])
