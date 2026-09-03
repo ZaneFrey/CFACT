@@ -3,7 +3,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 
-from tools.plotting import plot_autocorrelation, plot_ogives
+from tools.plotting import plot_autocorrelation, plot_cospectra, plot_ogives
 
 
 def test_autocorrelation_layout_and_variable_labels():
@@ -52,3 +52,30 @@ def test_ogives_use_time_scale_on_the_x_axis():
         np.testing.assert_allclose(figure.axes[0].lines[0].get_xdata(), time_scale_seconds)
     finally:
         plt.close(figure)
+
+
+def test_cospectra_and_ogives_place_height_legends_on_the_rightmost_panel():
+    cospectra = [{
+        "varName": "u_w",
+        "displayName": "Co(u, w)",
+        "series": [{"heightTag": "1m", "frequencyHz": [0.1, 0.2], "data": [1.0, 0.5], "normalizedData": [0.1, 0.1]}],
+    }, {
+        "varName": "w_tc",
+        "displayName": "Co(w, tc)",
+        "series": [{"heightTag": "1m", "frequencyHz": [0.1, 0.2], "data": [1.0, 0.5], "normalizedData": [0.1, 0.1]}],
+    }]
+    ogives = [{
+        "varName": stat["varName"],
+        "displayName": stat["displayName"],
+        "series": [{"heightTag": "1m", "timeScaleSeconds": [10.0, 5.0], "data": [0.15, 0.0]}],
+    } for stat in cospectra]
+    cospectrum_figure = plot_cospectra(cospectra)
+    ogive_figure = plot_ogives(ogives)
+    try:
+        assert cospectrum_figure.axes[0].get_legend() is None
+        assert cospectrum_figure.axes[1].get_legend() is not None
+        assert ogive_figure.axes[0].get_legend() is None
+        assert ogive_figure.axes[1].get_legend() is not None
+    finally:
+        plt.close(cospectrum_figure)
+        plt.close(ogive_figure)

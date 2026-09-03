@@ -226,8 +226,9 @@ def plot_cospectra(stats: list[dict[str, Any]], figTitle: str | None = None):
             s_cat = np.concatenate(signed_values)
             lim = max(1.0, float(np.nanmax(np.abs(s_cat))))
             ax_signed.set_ylim(-1.05 * lim, 1.05 * lim)
-    handles = [axes[0, 0].plot([], [], lw=1.5, color=_lookup_height_color(tag, master_tags, cmap), label=format_height_label(tag))[0] for tag in master_tags]
-    axes[0, 0].legend(handles=handles, loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, title="Height")
+    legend_ax = axes[0, -1]
+    handles = [legend_ax.plot([], [], lw=1.5, color=_lookup_height_color(tag, master_tags, cmap), label=format_height_label(tag))[0] for tag in master_tags]
+    legend_ax.legend(handles=handles, loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, title="Height")
     fig.tight_layout()
     return fig
 
@@ -263,8 +264,9 @@ def plot_ogives(stats: list[dict[str, Any]], figTitle: str | None = None):
         if period_values:
             periods = np.concatenate(period_values)
             ax.set_xlim(np.nanmin(periods), np.nanmax(periods))
-    handles = [axes[0, 0].plot([], [], lw=1.5, color=_lookup_height_color(tag, master_tags, cmap), label=format_height_label(tag))[0] for tag in master_tags]
-    axes[0, 0].legend(handles=handles, loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, title="Height")
+    legend_ax = axes[0, -1]
+    handles = [legend_ax.plot([], [], lw=1.5, color=_lookup_height_color(tag, master_tags, cmap), label=format_height_label(tag))[0] for tag in master_tags]
+    legend_ax.legend(handles=handles, loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, title="Height")
     fig.tight_layout()
     return fig
 
